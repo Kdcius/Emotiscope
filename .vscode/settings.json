@@ -1,6 +1,7 @@
 {
     "cmake.configureOnOpen": false,
     "files.associations": {
+		"*.rmd": "markdown",
 		"cmath": "cpp",
 		"optional": "cpp",
 		"istream": "cpp",
@@ -24,6 +25,14 @@
 		"span": "cpp",
 		"random": "cpp",
 		"list": "cpp",
-		"limits": "cpp"
+		"limits": "cpp",
+		"usb_wrap_struct.h": "c",
+		"gpio_ll.h": "c",
+		"usb_persist.h": "c",
+		"clk_gate_ll.h": "c",
+		"usb_periph.h": "c",
+		"usb_reg.h": "c",
+		"soc.h": "c",
+		"usb_serial_jtag_ll.h": "c"
 	}
 }

@@ -16,9 +16,9 @@ Functions for reading and storing data acquired by the I2S microphone
 #include "driver/gpio.h"
 
 // Define I2S pins
-#define I2S_LRCLK_PIN 35
-#define I2S_BCLK_PIN  36
-#define I2S_DIN_PIN   37
+#define I2S_LRCLK_PIN 41
+#define I2S_BCLK_PIN  40
+#define I2S_DIN_PIN   42
 
 #define CHUNK_SIZE 64
 #define SAMPLE_RATE 12800

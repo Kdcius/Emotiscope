@@ -3,8 +3,8 @@
 #include <esp_check.h>
 #include <esp_log.h>
 
-#define LED_DATA_1_PIN ( 21 )
-#define LED_DATA_2_PIN ( 17 )
+#define LED_DATA_PIN ( 21 )  // Change this to your GPIO pin
+#define NUM_LEDS ( 150 )     // Total number of LEDs in the strip
 
 // 32-bit color input
 extern CRGBF leds[ NUM_LEDS ];
@@ -17,31 +17,28 @@ CRGBF dither_error[ NUM_LEDS ];
 // True 8-bit color output
 static uint8_t raw_led_data[ NUM_LEDS*3 ];
 
-rmt_channel_handle_t tx_chan_a = NULL;
-rmt_channel_handle_t tx_chan_b = NULL;
-rmt_encoder_handle_t led_encoder_a = NULL;
-rmt_encoder_handle_t led_encoder_b = NULL;
+rmt_channel_handle_t tx_chan = NULL;
+rmt_encoder_handle_t led_encoder = NULL;
 
 uint32_t lfsr = 0xACE1u;  // Initial seed for LFSR
 const uint32_t polynomial = 0x10000000u;  // Polynomial for LFSR
 
 typedef struct {
-    rmt_encoder_t		base;
-    rmt_encoder_t		*bytes_encoder;
-    rmt_encoder_t		*copy_encoder;
-    int 				state;
-    rmt_symbol_word_t	reset_code;
+    rmt_encoder_t base;
+    rmt_encoder_t *bytes_encoder;
+    rmt_encoder_t *copy_encoder;
+    int state;
+    rmt_symbol_word_t reset_code;
 } rmt_led_strip_encoder_t;
 
-rmt_led_strip_encoder_t strip_encoder_a;
-rmt_led_strip_encoder_t strip_encoder_b;
+rmt_led_strip_encoder_t strip_encoder;
 
 rmt_transmit_config_t tx_config = {
-	.loop_count = 0,  // no transfer loop
-	.flags      = {
-		.eot_level         = 0,
-		.queue_nonblocking = 0,
-	},
+    .loop_count = 0,  // no transfer loop
+    .flags = {
+        .eot_level = 0,
+        .queue_nonblocking = 0,
+    },
 };
 
 typedef struct {
@@ -122,14 +119,10 @@ static esp_err_t rmt_led_strip_encoder_reset(rmt_encoder_t *encoder){
     return ESP_OK;
 }
 
-esp_err_t rmt_new_led_strip_encoder(const led_strip_encoder_config_t *config, rmt_encoder_handle_t *ret_encoder_a, rmt_encoder_handle_t *ret_encoder_b){
-	strip_encoder_a.base.encode = rmt_encode_led_strip;
-    strip_encoder_a.base.del    = rmt_del_led_strip_encoder;
-    strip_encoder_a.base.reset  = rmt_led_strip_encoder_reset;
-
-	strip_encoder_b.base.encode = rmt_encode_led_strip;
-    strip_encoder_b.base.del    = rmt_del_led_strip_encoder;
-    strip_encoder_b.base.reset  = rmt_led_strip_encoder_reset;
+esp_err_t rmt_new_led_strip_encoder(const led_strip_encoder_config_t *config, rmt_encoder_handle_t *ret_encoder){
+	strip_encoder.base.encode = rmt_encode_led_strip;
+    strip_encoder.base.del    = rmt_del_led_strip_encoder;
+    strip_encoder.base.reset  = rmt_led_strip_encoder_reset;
 
     // different led strip might have its own timing requirements, following parameter is for WS2812
     rmt_bytes_encoder_config_t bytes_encoder_config = {
@@ -138,68 +131,47 @@ esp_err_t rmt_new_led_strip_encoder(const led_strip_encoder_config_t *config, rm
 		.flags = { .msb_first = 1 }
     };
     
-	rmt_new_bytes_encoder(&bytes_encoder_config, &strip_encoder_a.bytes_encoder);
-	rmt_new_bytes_encoder(&bytes_encoder_config, &strip_encoder_b.bytes_encoder);
+	rmt_new_bytes_encoder(&bytes_encoder_config, &strip_encoder.bytes_encoder);
     rmt_copy_encoder_config_t copy_encoder_config = {};
-    rmt_new_copy_encoder(&copy_encoder_config, &strip_encoder_a.copy_encoder);
-	rmt_new_copy_encoder(&copy_encoder_config, &strip_encoder_b.copy_encoder);
+    rmt_new_copy_encoder(&copy_encoder_config, &strip_encoder.copy_encoder);
 
-    strip_encoder_a.reset_code = (rmt_symbol_word_t) { 250, 0, 250, 0 };
-    strip_encoder_b.reset_code = (rmt_symbol_word_t) { 250, 0, 250, 0 };
+    strip_encoder.reset_code = (rmt_symbol_word_t) { 250, 0, 250, 0 };
 
-    *ret_encoder_a = &strip_encoder_a.base;
-    *ret_encoder_b = &strip_encoder_b.base;
+    *ret_encoder = &strip_encoder.base;
     return ESP_OK;
 }
 
 void init_rmt_driver() {
-	printf("init_rmt_driver\n");
-	rmt_tx_channel_config_t tx_chan_a_config = {
-		.gpio_num = (gpio_num_t)LED_DATA_1_PIN,	// GPIO number
-		.clk_src = RMT_CLK_SRC_DEFAULT,	 // select source clock
-		.resolution_hz = 10000000,		 // 10 MHz tick resolution, i.e., 1 tick = 0.1 µs
-		.mem_block_symbols = 64,		 // memory block size, 64 * 4 = 256 Bytes
-		.trans_queue_depth = 4,			 // set the number of transactions that can be pending in the background
-		.intr_priority = 99,
-		.flags = {
-			.invert_out   = 0,
-			.with_dma     = 0,
-			.io_loop_back = 0,
-        	.io_od_mode   = 0
-		},
-	};
+    printf("init_rmt_driver\n");
+    rmt_tx_channel_config_t tx_chan_config = {
+        .gpio_num = (gpio_num_t)LED_DATA_PIN,
+        .clk_src = RMT_CLK_SRC_DEFAULT,
+        .resolution_hz = 10000000,
+        .mem_block_symbols = 64,
+        .trans_queue_depth = 4,
+        .intr_priority = 99,
+        .flags = {
+            .invert_out = 0,
+            .with_dma = 0,
+            .io_loop_back = 0,
+            .io_od_mode = 0
+        },
+    };
 
-	rmt_tx_channel_config_t tx_chan_b_config = {
-		.gpio_num = (gpio_num_t)LED_DATA_2_PIN, // GPIO number
-		.clk_src = RMT_CLK_SRC_DEFAULT,	 // select source clock
-		.resolution_hz = 10000000,		 // 10 MHz tick resolution, i.e., 1 tick = 0.1 µs
-		.mem_block_symbols = 64,		 // memory block size, 64 * 4 = 256 Bytes
-		.trans_queue_depth = 4,			 // set the number of transactions that can be pending in the background
-		.intr_priority = 99,
-		.flags = {
-			.invert_out   = 0,
-			.with_dma     = 0,
-			.io_loop_back = 0,
-        	.io_od_mode   = 0
-		},
-	};
+    printf("rmt_new_tx_channel\n");
+    ESP_ERROR_CHECK(rmt_new_tx_channel(&tx_chan_config, &tx_chan));
 
-	printf("rmt_new_tx_channel\n");
-	ESP_ERROR_CHECK(rmt_new_tx_channel(&tx_chan_a_config, &tx_chan_a));
-	ESP_ERROR_CHECK(rmt_new_tx_channel(&tx_chan_b_config, &tx_chan_b));
-
-	ESP_LOGI(TAG, "Install led strip encoder");
+    ESP_LOGI(TAG, "Install led strip encoder");
     led_strip_encoder_config_t encoder_config = {
         .resolution = 10000000,
     };
-	printf("rmt_new_led_strip_encoder\n");
-    ESP_ERROR_CHECK(rmt_new_led_strip_encoder(&encoder_config, &led_encoder_a, &led_encoder_b));
-	
-	printf("rmt_enable\n");
-	ESP_ERROR_CHECK(rmt_enable(tx_chan_a));
-	ESP_ERROR_CHECK(rmt_enable(tx_chan_b));
+    printf("rmt_new_led_strip_encoder\n");
+    ESP_ERROR_CHECK(rmt_new_led_strip_encoder(&encoder_config, &led_encoder));
+    
+    printf("rmt_enable\n");
+    ESP_ERROR_CHECK(rmt_enable(tx_chan));
 
-	init_random_dither_error();
+    init_random_dither_error();
 }
 
 void quantize_color_error(bool temporal_dithering){
@@ -236,26 +208,19 @@ void quantize_color_error(bool temporal_dithering){
 }
 
 IRAM_ATTR void transmit_leds() {
-	profile_function([&]() {
-		// Wait here if previous frame transmission has not yet completed
-		rmt_tx_wait_all_done( tx_chan_a, portMAX_DELAY );
-		rmt_tx_wait_all_done( tx_chan_b, portMAX_DELAY );
+    profile_function([&]() {
+        // Wait here if previous frame transmission has not yet completed
+        rmt_tx_wait_all_done(tx_chan, portMAX_DELAY);
 
-		// Clear the 8-bit buffer	
-		memset( raw_led_data, 0, NUM_LEDS*3 );
+        // Clear the 8-bit buffer    
+        memset(raw_led_data, 0, NUM_LEDS*3);
 
-		// Quantize the floating point color to 8-bit with temporal dithering
-		//
-		// This allows the 8-bit LEDs to emulate the look of a higher bit-depth using Persistence of Vision
-		// The contents of the floating point CRGBF "leds" array are downsampled into pseudo-random 8-bit
-		// dither patterns hundreds of times per second. Your eyes see these patterns as a smooth, higher
-		// dynamic range image with deeper color reproduction.
-		quantize_color_error( configuration.temporal_dithering );
+        // Quantize the floating point color to 8-bit with temporal dithering
+        quantize_color_error(configuration.temporal_dithering);
 
-		// Get to safety, THE PHOTONS ARE COMING!!!
-		if( filesystem_ready == true ){
-			rmt_transmit( tx_chan_a, led_encoder_a, raw_led_data, (sizeof(raw_led_data) >> 1), &tx_config );
-			rmt_transmit( tx_chan_b, led_encoder_b, raw_led_data+((NUM_LEDS>>1)*3), (sizeof(raw_led_data) >> 1), &tx_config );
-		}
-	}, __func__);
+        // Get to safety, THE PHOTONS ARE COMING!!!
+        if (filesystem_ready == true) {
+            rmt_transmit(tx_chan, led_encoder, raw_led_data, sizeof(raw_led_data), &tx_config);
+        }
+    }, __func__);
 }

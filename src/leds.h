@@ -11,10 +11,10 @@ Functions for manipulating and updating WS2812Bs using a custom
 floating-point "CRGBF" format.
 */
 
-#define DATA_PIN_1 13
-#define DATA_PIN_2 12
+#define DATA_PIN 21  // Change this to your GPIO pin
 #define LED_TYPE NEOPIXEL
 #define COLOR_ORDER GRB
+#define NUM_LEDS 150  // Updated to 150 LEDs
 
 #define REFERENCE_FPS 100
 
@@ -23,10 +23,10 @@ floating-point "CRGBF" format.
 CRGBF WHITE_BALANCE = { 1.0, 0.9375, 0.84 };
 
 typedef enum {
-	UI_1, UI_2, UI_3, UI_4, UI_5, UI_6, UI_7, UI_8, UI_9, UI_10,
-	UI_NEEDLE,
-	SLEEP_1, SLEEP_2,
-	SCREENSAVER_1, SCREENSAVER_2, SCREENSAVER_3, SCREENSAVER_4,
+    UI_1, UI_2, UI_3, UI_4, UI_5, UI_6, UI_7, UI_8, UI_9, UI_10,
+    UI_NEEDLE,
+    SLEEP_1, SLEEP_2,
+    SCREENSAVER_1, SCREENSAVER_2, SCREENSAVER_3, SCREENSAVER_4,
     NUM_RESERVED_DOTS
 } reserved_dots_t;
 
@@ -50,7 +50,7 @@ float rendered_debug_value = 0.0;
 CRGBF incandescent_lookup = {sqrt(1.0000), sqrt(0.1982), sqrt(0.0244)};
 
 float note_colors[12] = {0.0000, 0.0833, 0.1666, 0.2499, 0.3333, 0.4166,
-						 0.4999, 0.5833, 0.6666, 0.7499, 0.8333, 0.9166};
+                         0.4999, 0.5833, 0.6666, 0.7499, 0.8333, 0.9166};
 
 // 256 pre-calculated values for full-saturated HSV lookup
 const uint8_t hsv_lookup[256][3] = {
@@ -273,48 +273,31 @@ CRGBF mix(CRGBF color_1, CRGBF color_2, float amount) {
 }
 
 void apply_scaling_mode() {
-	// Work using this copy
-	save_leds_to_temp();
+    // Work using this copy
+    save_leds_to_temp();
 
-	// Nearest Neighbor Stretch
-	// for(uint16_t i = 0; i < NUM_LEDS; i++){
-	//  leds[i] = leds_temp[i>>1];
-	//}
-	//*/
+    // Linear Stretch (adjust for 150 LEDs)
+    for (uint16_t i = 0; i < NUM_LEDS; i++) {
+        float i_scaled = i * (128.0f / 150.0f);
+        uint16_t i_scaled_whole = (uint16_t)i_scaled;
+        float i_scaled_fract = i_scaled - i_scaled_whole;
 
-	// Linear Stretch
-	/*
-	for (uint16_t i = 0; i < NUM_LEDS - 1; i++) {
-	  float i_scaled = i / 2.0;
-	  uint16_t i_scaled_whole = i_scaled;
-	  float i_scaled_fract = i_scaled - i_scaled_whole;
-
-	  leds[i] = mix(leds_temp[i_scaled_whole], leds_temp[i_scaled_whole + 1],
-	i_scaled_fract);
-	}
-	leds[NUM_LEDS - 1] = leds[NUM_LEDS - 2];
-	*/
-
-	// Mirror Mode
-	for (uint16_t i = 0; i < (NUM_LEDS >> 1); i++) {  // Squash to one half
-		int16_t fetch_led = i << 1;
-		leds[(NUM_LEDS >> 1) + i].r = leds_temp[fetch_led + 0].r * 0.5 + leds_temp[fetch_led + 1].r * 0.5;
-		leds[(NUM_LEDS >> 1) + i].g = leds_temp[fetch_led + 0].g * 0.5 + leds_temp[fetch_led + 1].g * 0.5;
-		leds[(NUM_LEDS >> 1) + i].b = leds_temp[fetch_led + 0].b * 0.5 + leds_temp[fetch_led + 1].b * 0.5;
-
-		leds[((NUM_LEDS >> 1) - 1) - i] = leds[(NUM_LEDS >> 1) + i];
-	}
-
+        if (i_scaled_whole < 127) {
+            leds[i] = mix(leds_temp[i_scaled_whole], leds_temp[i_scaled_whole + 1], i_scaled_fract);
+        } else {
+            leds[i] = leds_temp[127];
+        }
+    }
 }
 
 void rough_mirror_screen() {
-	save_leds_to_temp();
-	uint16_t half_width = NUM_LEDS >> 1;
-	for (uint16_t i = 0; i < half_width; i++) {
-		CRGBF sample_point = leds_temp[i << 1];
-		leds[half_width + i] = sample_point;
-		leds[(half_width - 1) - i] = sample_point;
-	}
+    save_leds_to_temp();
+    uint16_t half_width = NUM_LEDS >> 1;
+    for (uint16_t i = 0; i < half_width; i++) {
+        CRGBF sample_point = leds_temp[(uint16_t)(i * (128.0f / 150.0f))];
+        leds[half_width + i] = sample_point;
+        leds[(half_width - 1) - i] = sample_point;
+    }
 }
 
 CRGBF add(CRGBF color_1, CRGBF color_2, float add_amount = 1.0) {
@@ -649,46 +632,45 @@ float get_color_range_hue(float progress){
 }
 
 void apply_background(float background_level){
-	profile_function([&]() {
-		if(light_modes[configuration.current_mode].type == LIGHT_MODE_TYPE_SYSTEM){ return; }
-		background_level *= 0.25; // Max 25% brightness
+    profile_function([&]() {
+        if(light_modes[configuration.current_mode].type == LIGHT_MODE_TYPE_SYSTEM){ return; }
+        background_level *= 0.25; // Max 25% brightness
 
-		if(background_level > 0.0){
-			if(configuration.mirror_mode == false){
-				for(uint16_t i = 0; i < NUM_LEDS; i++){
-					float progress = num_leds_float_lookup[i];
-					CRGBF background_color = hsv(
-						get_color_range_hue(progress),
-						configuration.saturation,
-						1.0
-					);
+        if(background_level > 0.0){
+            if(configuration.mirror_mode == false){
+                for(uint16_t i = 0; i < NUM_LEDS; i++){
+                    float progress = (float)i / (NUM_LEDS - 1);
+                    CRGBF background_color = hsv(
+                        get_color_range_hue(progress),
+                        configuration.saturation,
+                        1.0
+                    );
 
-					leds_temp[i] = background_color;
-				}
-			}
-			else{
-				for(uint16_t i = 0; i < (NUM_LEDS >> 1); i++){
-					float progress = num_leds_float_lookup[i << 1];
-					CRGBF background_color = hsv(
-						get_color_range_hue(progress),
-						configuration.saturation,
-						1.0
-					);
-					
-					int16_t left_index  = ((NUM_LEDS>>1)-1) - i;
-					int16_t right_index = ((NUM_LEDS>>1))   + i;
+                    leds_temp[i] = background_color;
+                }
+            }
+            else{
+                for(uint16_t i = 0; i < (NUM_LEDS >> 1); i++){
+                    float progress = (float)i / ((NUM_LEDS >> 1) - 1);
+                    CRGBF background_color = hsv(
+                        get_color_range_hue(progress),
+                        configuration.saturation,
+                        1.0
+                    );
+                    
+                    int16_t left_index  = ((NUM_LEDS>>1)-1) - i;
+                    int16_t right_index = ((NUM_LEDS>>1))   + i;
 
-					leds_temp[left_index] = background_color;
-					leds_temp[right_index] = background_color;
-				}
-			}
+                    leds_temp[left_index] = background_color;
+                    leds_temp[right_index] = background_color;
+                }
+            }
 
-			// Apply background to the main buffer
-			scale_CRGBF_array_by_constant(leds_temp,  background_level, NUM_LEDS);
-			//scale_CRGBF_array_by_constant(leds, 1.0 - background_level, NUM_LEDS);
-			add_CRGBF_arrays(leds, leds_temp, NUM_LEDS);
-		}
-	}, __func__);
+            // Apply background to the main buffer
+            scale_CRGBF_array_by_constant(leds_temp,  background_level, NUM_LEDS);
+            add_CRGBF_arrays(leds, leds_temp, NUM_LEDS);
+        }
+    }, __func__);
 }
 
 void clear_display(float keep = 0.0){
