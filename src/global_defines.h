@@ -12,6 +12,14 @@
 // It won't void any kind of stupid warranty, but things *may* break at this point if you change this number.
 #define NUM_LEDS ( 150 ) // MUST be divisible by 2
 
+// --- Hardware present on this build -----------------------------------------
+// The original Emotiscope PCB has capacitive touch pads and a PWM indicator
+// bulb. This fork runs on a Seeed XIAO ESP32-S3 with only an I2S mic and the
+// LED strip wired, so those subsystems are compiled out. Set back to 1 if you
+// add the hardware (touch pads must land on GPIO 1-14 to use the touch peripheral).
+#define HAS_TOUCH_PADS    ( 0 )
+#define HAS_INDICATOR_LED ( 0 )
+
 // Number of Goertzel instances running in parallel
 #define NUM_FREQS ( 64 ) 
 

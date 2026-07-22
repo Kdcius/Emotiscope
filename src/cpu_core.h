@@ -48,7 +48,9 @@ void run_cpu() {
 
 		// print_audio_data();
 
+#if HAS_TOUCH_PADS
 		read_touch();
+#endif
 
 		check_serial();
 

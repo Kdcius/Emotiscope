@@ -74,7 +74,6 @@ void check_boot_button(){
 }
 
 void init_system() {
-	extern void init_hardware_version_pins(); // (hardware_version.h)
 	extern void init_light_mode_list();       // (light_modes.h)
 	extern void init_leds();
 	extern void init_i2s_microphone();
@@ -91,7 +90,6 @@ void init_system() {
 	extern void init_floating_point_lookups();
 	extern void init_vu();
 
-	init_hardware_version_pins();       // (hardware_version.h)
 	init_serial(921600);				// (system.h)
 	init_light_mode_list();             // (light_modes.h)
 	init_filesystem();                  // (filesystem.h)
@@ -100,9 +98,13 @@ void init_system() {
 	init_window_lookup();				// (goertzel.h)
 	init_goertzel_constants_musical();	// (goertzel.h)
 	init_tempo_goertzel_constants();	// (tempo.h)	
+#if HAS_INDICATOR_LED
 	init_indicator_light();             // (indicator.h)
+#endif
 	init_rmt_driver();                  // (led_driver.h)
+#if HAS_TOUCH_PADS
 	init_touch();                       // (touch.h)
+#endif
 	init_wifi();                        // (wireless.h)
 	init_noise_samples();               // (utilities.h)
 	init_floating_point_lookups();      // (utilities.h)

@@ -39,7 +39,9 @@ void run_gpu() {
 		// Update auto color cycling
 		update_auto_color();  // (leds.h)
 
+#if HAS_INDICATOR_LED
 		run_indicator_light();
+#endif
 
 		// RUN THE CURRENT MODE
 		// ------------------------------------------------------------
@@ -64,7 +66,9 @@ void run_gpu() {
 			run_standby();
 		}
 
+#if HAS_TOUCH_PADS
 		render_touches();  // (touch.h)
+#endif
 		
 		// This value decays itself non linearly toward zero all the time, 
 		// *really* slowing down the LPF when it's set to 1.0.

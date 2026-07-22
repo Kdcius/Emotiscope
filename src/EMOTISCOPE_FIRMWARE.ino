@@ -75,7 +75,6 @@
 
 // Internal dependencies ------------------------------------------------------
 #include "global_defines.h" // ..... Compile-time configuration
-#include "hardware_version.h" // ... Baked into the PCB are 4 pins that define the hardware version in binary
 #include "types.h" // .............. typedefs for things like CRGBFs
 #include "profiler.h" // ........... Developer tools, measures the execution of functions
 #include "sliders.h" // ............ Handles sliders that appear in the web app
