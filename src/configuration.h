@@ -8,7 +8,7 @@
 Preferences preferences; // NVS storage for configuration
 
 extern light_mode light_modes[];
-extern PsychicWebSocketHandler websocket_handler;
+extern void broadcast(const char* message); // (utilities.h) sends over all enabled transports
 
 volatile bool wifi_config_mode = false;
 
@@ -74,79 +74,79 @@ void load_config(){
 void sync_configuration_to_client() {
 	char config_item_buffer[120];
 
-	websocket_handler.sendAll("clear_config");
+	broadcast("clear_config");
 
 	// brightness
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|brightness|float|%.3f", configuration.brightness);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// softness
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|softness|float|%.3f", configuration.softness);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// speed
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|speed|float|%.3f", configuration.speed);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// color
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|color|float|%.3f", configuration.color);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// current_mode
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|current_mode|int|%li", configuration.current_mode);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// mirror_mode
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|mirror_mode|int|%d", configuration.mirror_mode);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// warmth
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|warmth|float|%.3f", configuration.warmth);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// color_range
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|color_range|float|%.3f", configuration.color_range);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// saturation
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|saturation|float|%.3f", configuration.saturation);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// background
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|background|float|%.3f", configuration.background);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// screensaver
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|screensaver|int|%d", configuration.screensaver);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// temporal_dithering
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|temporal_dithering|int|%d", configuration.temporal_dithering);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// reverse_color_range
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|reverse_color_range|int|%d", configuration.reverse_color_range);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
 	// auto_color_cycle
 	memset(config_item_buffer, 0, 120);
 	snprintf(config_item_buffer, 120, "new_config|auto_color_cycle|int|%d", configuration.auto_color_cycle);
-	websocket_handler.sendAll(config_item_buffer);
+	broadcast(config_item_buffer);
 
-	websocket_handler.sendAll("config_ready");
+	broadcast("config_ready");
 }
 
 // Save configuration to LittleFS

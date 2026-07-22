@@ -99,6 +99,7 @@
 #include "standby.h" // ............ Handles sleep/wake + animations
 #include "light_modes.h" // ........ Definition and handling of light modes
 #include "commands.h" // ........... Queuing and parsing of commands recieved
+#include "ble_transport.h" // ...... BLE GATT transport for the same command protocol
 #include "wireless.h" // ........... Communication with your network and the web-app
 #include "ota.h" // ................ Over-the-air firmware updates
 

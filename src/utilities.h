@@ -75,9 +75,14 @@ void fetch_substring(char* input_buffer, char delimiter, uint8_t fetch_index){
 	}
 }
 
+// Send a message to every connected client, on whichever transports are enabled
 void broadcast(const char* message){
+#if TRANSPORT_WIFI
 	extern PsychicWebSocketHandler websocket_handler;
 	websocket_handler.sendAll(message);
+#endif
+	extern void ble_send(const char* message); // no-op stub when TRANSPORT_BLE is 0
+	ble_send(message);
 	//printf("%s\n", message);
 }
 

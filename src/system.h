@@ -89,6 +89,7 @@ void init_system() {
 	extern void init_noise_samples();
 	extern void init_floating_point_lookups();
 	extern void init_vu();
+	extern void init_ble();             // (ble_transport.h)
 
 	init_serial(921600);				// (system.h)
 	init_light_mode_list();             // (light_modes.h)
@@ -105,7 +106,10 @@ void init_system() {
 #if HAS_TOUCH_PADS
 	init_touch();                       // (touch.h)
 #endif
+#if TRANSPORT_WIFI
 	init_wifi();                        // (wireless.h)
+#endif
+	init_ble();                         // (ble_transport.h - no-op when TRANSPORT_BLE is 0)
 	init_noise_samples();               // (utilities.h)
 	init_floating_point_lookups();      // (utilities.h)
 	init_boot_button();                 // (system.h)

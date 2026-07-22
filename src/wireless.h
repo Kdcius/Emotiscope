@@ -213,6 +213,13 @@ void check_if_websocket_client_still_present(uint16_t client_slot) {
 }
 
 void transmit_to_client_in_slot(const char *message, uint8_t client_slot) {
+	// Commands that arrived over BLE are tagged with BLE_CLIENT_SLOT - route
+	// their replies back out over BLE instead of the WebSocket client table
+	if (client_slot == BLE_CLIENT_SLOT) {
+		ble_send(message);
+		return;
+	}
+
 	PsychicWebSocketClient *client = get_client_in_slot(client_slot);
 	if (client != NULL) {
 		client->sendMessage(message);

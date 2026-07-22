@@ -20,6 +20,20 @@
 #define HAS_TOUCH_PADS    ( 0 )
 #define HAS_INDICATOR_LED ( 0 )
 
+// --- Control transport ------------------------------------------------------
+// TRANSPORT_WIFI: original behavior - WiFi + PsychicHttp web server + WebSocket.
+// TRANSPORT_BLE:  BLE GATT (Nordic UART Service) carrying the same newline-framed
+//                 command strings; pair it with the webapp-ble/ client.
+// Both can be 1 (commands are transport-agnostic), but for outdoor/BLE-only use
+// leave WiFi off: the WiFi stack is then never started (code stays compiled).
+#define TRANSPORT_WIFI ( 0 )
+#define TRANSPORT_BLE  ( 1 )
+
+// Slot number that tags commands arriving over BLE (WebSocket clients use 0-3).
+// parse_command() replies via transmit_to_client_in_slot(), which routes this
+// slot back out over BLE. Single BLE client supported.
+#define BLE_CLIENT_SLOT ( 128 )
+
 // Periodic HTTPS check-in to https://app.emotiscope.rocks/discovery/ which reports
 // this device's local IP to Lixie Labs so their hosted web app can find it. It fails
 // on this fork (TLS handshake is rejected) and each failed attempt leaves sockets in
