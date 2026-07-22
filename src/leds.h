@@ -11,7 +11,7 @@ Functions for manipulating and updating WS2812Bs using a custom
 floating-point "CRGBF" format.
 */
 
-#define DATA_PIN 21  // Change this to your GPIO pin
+#define DATA_PIN 5  // Change this to your GPIO pin
 #define LED_TYPE NEOPIXEL
 #define COLOR_ORDER GRB
 #define NUM_LEDS 150  // Updated to 150 LEDs

@@ -3,7 +3,7 @@
 #include <esp_check.h>
 #include <esp_log.h>
 
-#define LED_DATA_PIN ( 21 )  // Change this to your GPIO pin
+#define LED_DATA_PIN ( 5 )  // Change this to your GPIO pin
 #define NUM_LEDS ( 150 )     // Total number of LEDs in the strip
 
 // 32-bit color input
