@@ -37,8 +37,8 @@ void draw_waveform(){
 				sample
 			);
 
-			leds[63-i] = pixel_color;
-			leds[64+i] = pixel_color;
+			leds[((NUM_LEDS>>1)-1) - i] = pixel_color;
+			leds[ (NUM_LEDS>>1)    + i] = pixel_color;
 		}
 	}
 }

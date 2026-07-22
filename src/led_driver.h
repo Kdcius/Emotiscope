@@ -4,7 +4,7 @@
 #include <esp_log.h>
 
 #define LED_DATA_PIN ( 5 )  // Change this to your GPIO pin
-#define NUM_LEDS ( 150 )     // Total number of LEDs in the strip
+// NUM_LEDS comes from global_defines.h (included first) - do not redefine it here
 
 // 32-bit color input
 extern CRGBF leds[ NUM_LEDS ];

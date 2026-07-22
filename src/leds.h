@@ -11,10 +11,8 @@ Functions for manipulating and updating WS2812Bs using a custom
 floating-point "CRGBF" format.
 */
 
-#define DATA_PIN 5  // Change this to your GPIO pin
-#define LED_TYPE NEOPIXEL
-#define COLOR_ORDER GRB
-#define NUM_LEDS 150  // Updated to 150 LEDs
+// LED pin is LED_DATA_PIN in led_driver.h - that is the only one the RMT driver reads.
+// NUM_LEDS comes from global_defines.h (included first) - do not redefine it here.
 
 #define REFERENCE_FPS 100
 
@@ -152,22 +150,13 @@ void smooth_led_output(float blend_strength) {
 		float update_ratio = 1.0 - blend_strength;
 		float update_ratio_inv = blend_strength;
 
-		for (uint16_t i = 0; i < NUM_LEDS; i += 4) {
-			leds_smooth[i + 0].r = leds_smooth[i + 0].r * (update_ratio_inv) + leds[i + 0].r * (update_ratio);
-			leds_smooth[i + 0].g = leds_smooth[i + 0].g * (update_ratio_inv) + leds[i + 0].g * (update_ratio);
-			leds_smooth[i + 0].b = leds_smooth[i + 0].b * (update_ratio_inv) + leds[i + 0].b * (update_ratio);
-
-			leds_smooth[i + 1].r = leds_smooth[i + 1].r * (update_ratio_inv) + leds[i + 1].r * (update_ratio);
-			leds_smooth[i + 1].g = leds_smooth[i + 1].g * (update_ratio_inv) + leds[i + 1].g * (update_ratio);
-			leds_smooth[i + 1].b = leds_smooth[i + 1].b * (update_ratio_inv) + leds[i + 1].b * (update_ratio);
-
-			leds_smooth[i + 2].r = leds_smooth[i + 2].r * (update_ratio_inv) + leds[i + 2].r * (update_ratio);
-			leds_smooth[i + 2].g = leds_smooth[i + 2].g * (update_ratio_inv) + leds[i + 2].g * (update_ratio);
-			leds_smooth[i + 2].b = leds_smooth[i + 2].b * (update_ratio_inv) + leds[i + 2].b * (update_ratio);
-
-			leds_smooth[i + 3].r = leds_smooth[i + 3].r * (update_ratio_inv) + leds[i + 3].r * (update_ratio);
-			leds_smooth[i + 3].g = leds_smooth[i + 3].g * (update_ratio_inv) + leds[i + 3].g * (update_ratio);
-			leds_smooth[i + 3].b = leds_smooth[i + 3].b * (update_ratio_inv) + leds[i + 3].b * (update_ratio);
+		// NOTE: this was manually unrolled 4x, which read/wrote past the end of the
+		// buffers whenever NUM_LEDS was not a multiple of 4 (e.g. 150). Left rolled up
+		// so it stays correct for any NUM_LEDS; the compiler unrolls it anyway.
+		for (uint16_t i = 0; i < NUM_LEDS; i++) {
+			leds_smooth[i].r = leds_smooth[i].r * (update_ratio_inv) + leds[i].r * (update_ratio);
+			leds_smooth[i].g = leds_smooth[i].g * (update_ratio_inv) + leds[i].g * (update_ratio);
+			leds_smooth[i].b = leds_smooth[i].b * (update_ratio_inv) + leds[i].b * (update_ratio);
 		}
 	}
 	else {
