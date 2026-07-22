@@ -5,7 +5,9 @@ void run_web() {
 
 		if (web_server_ready == true && wifi_config_mode == false) {
 			process_command_queue();
+#if ENABLE_CLOUD_DISCOVERY
 			discovery_check_in();
+#endif
 
 			// Write pending changes to LittleFS
 			sync_configuration_to_file_system();

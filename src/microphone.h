@@ -40,17 +40,20 @@ void init_i2s_microphone(){
 	// Create a new RX channel and get the handle of this channel
 	i2s_new_channel(&chan_cfg, NULL, &rx_handle);
 
-	// Configuration for the I2S standard mode, suitable for the SPH0645 microphone
+	// Configuration for the I2S standard mode, suitable for the INMP441 microphone.
+	// NOTE: upstream Emotiscope targets the SPH0645, which needs a non-standard
+	// combination (ws_pol inverted, no bit shift) to work around its timing quirk.
+	// The INMP441 is plain Philips I2S, so those workarounds are removed here.
 	i2s_std_config_t std_cfg = {
 		.clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(12800), // BCLK frequency for a 2kHz sample rate (64 * 2kHz)
 		.slot_cfg = {
-			.data_bit_width = I2S_DATA_BIT_WIDTH_32BIT, // Data bit width as 24 bits
+			.data_bit_width = I2S_DATA_BIT_WIDTH_32BIT, // INMP441 sends 24 bits, left-justified in a 32-bit slot
 			.slot_bit_width = I2S_SLOT_BIT_WIDTH_32BIT, // Slot width as 32 bits to accommodate data
 			.slot_mode = I2S_SLOT_MODE_STEREO, // Mono mode since it's a single microphone
-			.slot_mask = I2S_STD_SLOT_RIGHT, // Only reading the left channel slot
+			.slot_mask = I2S_STD_SLOT_LEFT, // INMP441 with its L/R pin tied to GND drives the LEFT slot
 			.ws_width = 32, // WS signal width as 32 BCLK periods (since BCLK/64 and we are in mono mode)
-			.ws_pol = true, // Inverting WS polarity, so it changes on falling edge of BCLK
-			.bit_shift = false, // No bit shift needed as MSB is delayed by 1 BCLK after WS
+			.ws_pol = false, // Standard I2S: WS low = left channel
+			.bit_shift = true, // Philips standard: MSB appears 1 BCLK after the WS edge
 			.left_align = true, // Data is left-aligned within the 32-bit slot
 			.big_endian = false, // Data format is little endian
 			.bit_order_lsb = false, // MSB is received first
@@ -93,12 +96,16 @@ void acquire_sample_chunk() {
 			memset(new_samples_raw, 0, sizeof(uint32_t) * CHUNK_SIZE);
 		}
 
-		// Clip the sample value if it's too large, cast to floats
+		// Clip the sample value if it's too large, cast to floats.
+		// NOTE: the upstream "+7000 / -360" terms corrected the SPH0645's large DC
+		// offset. The INMP441 has no such offset, so they are dropped.
+		// The >>14 stays: both parts are left-justified MSB-first, so this takes the
+		// top 18 bits either way, matching the recip_scale used below.
 		for (uint16_t i = 0; i < CHUNK_SIZE; i+=4) {
-			new_samples[i+0] = min(max((((int32_t)new_samples_raw[i+0]) >> 14) + 7000, (int32_t)-131072), (int32_t)131072) - 360;
-			new_samples[i+1] = min(max((((int32_t)new_samples_raw[i+1]) >> 14) + 7000, (int32_t)-131072), (int32_t)131072) - 360;
-			new_samples[i+2] = min(max((((int32_t)new_samples_raw[i+2]) >> 14) + 7000, (int32_t)-131072), (int32_t)131072) - 360;
-			new_samples[i+3] = min(max((((int32_t)new_samples_raw[i+3]) >> 14) + 7000, (int32_t)-131072), (int32_t)131072) - 360;
+			new_samples[i+0] = min(max((((int32_t)new_samples_raw[i+0]) >> 14), (int32_t)-131072), (int32_t)131072);
+			new_samples[i+1] = min(max((((int32_t)new_samples_raw[i+1]) >> 14), (int32_t)-131072), (int32_t)131072);
+			new_samples[i+2] = min(max((((int32_t)new_samples_raw[i+2]) >> 14), (int32_t)-131072), (int32_t)131072);
+			new_samples[i+3] = min(max((((int32_t)new_samples_raw[i+3]) >> 14), (int32_t)-131072), (int32_t)131072);
 		}
 
 		// Convert audio from "18-bit" float range to -1.0 to 1.0 range

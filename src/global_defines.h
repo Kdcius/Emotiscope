@@ -20,6 +20,13 @@
 #define HAS_TOUCH_PADS    ( 0 )
 #define HAS_INDICATOR_LED ( 0 )
 
+// Periodic HTTPS check-in to https://app.emotiscope.rocks/discovery/ which reports
+// this device's local IP to Lixie Labs so their hosted web app can find it. It fails
+// on this fork (TLS handshake is rejected) and each failed attempt leaves sockets in
+// a bad state, which starves the HTTP server and blocks the /ws WebSocket upgrade for
+// the ~4 minutes of exponential backoff. Not needed when serving the app locally.
+#define ENABLE_CLOUD_DISCOVERY ( 0 )
+
 // Number of Goertzel instances running in parallel
 #define NUM_FREQS ( 64 ) 
 
