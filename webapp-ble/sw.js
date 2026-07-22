@@ -4,7 +4,7 @@
 // only Bluetooth is needed to control the device. Bump CACHE_NAME when
 // shipping changes so installed phones pick up the new version.
 
-const CACHE_NAME = "emotiscope-ble-v1";
+const CACHE_NAME = "emotiscope-ble-v2";
 
 const PRECACHE = [
 	"./",

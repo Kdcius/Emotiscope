@@ -1,7 +1,8 @@
 {
 	"name": "Emotiscope by Lixie Labs",
 	"short_name": "Emotiscope",
-	"start_url": "../remote.html",
+	"start_url": "../",
+	"scope": "../",
 	"display": "fullscreen",
 	"background_color": "#070916",
 	"description": "Controls Emotiscope displays by Lixie Labs",
