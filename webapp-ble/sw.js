@@ -4,14 +4,14 @@
 // only Bluetooth is needed to control the device. Bump CACHE_NAME when
 // shipping changes so installed phones pick up the new version.
 
-const CACHE_NAME = "emotiscope-ble-v2";
+const CACHE_NAME = "emotiscope-ble-v4";
 
 const PRECACHE = [
 	"./",
 	"./index.html",
 	"./css/app.css",
 	"./font/chakra_petch.woff2",
-	"./img/icons.json",
+	"./manifest.json",
 	"./img/android/android-launchericon-192-192.png",
 	"./img/android/android-launchericon-512-512.png",
 	"./js/touch_calibration.js",
@@ -37,7 +37,10 @@ const PRECACHE = [
 self.addEventListener("install", (event) => {
 	event.waitUntil(
 		caches.open(CACHE_NAME)
-			.then((cache) => cache.addAll(PRECACHE))
+			// cache: "reload" bypasses the browser's HTTP cache (GitHub Pages
+			// serves max-age=600), so a new cache version always precaches
+			// fresh copies instead of resurrecting stale ones
+			.then((cache) => cache.addAll(PRECACHE.map((url) => new Request(url, { cache: "reload" }))))
 			.then(() => self.skipWaiting())
 	);
 });
