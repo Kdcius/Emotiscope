@@ -270,16 +270,21 @@ void update_tempo() {
 		static uint16_t calc_bin = 0;
 		uint16_t max_bin = (NUM_TEMPI - 1) * MAX_TEMPO_RANGE;
 
+		// One bin is recalculated per frame, sweeping the whole bank.
+		// NOTE: upstream advanced calc_bin by 2 EVERY frame while the parity
+		// picked +0/+1, which visited only bins = {1,2} mod 4 - half of the
+		// tempo bank was never measured. Advance only after the +1 frame so
+		// every bin is refreshed.
 		if(iter % 2 == 0){
 			calculate_tempi_magnitudes(calc_bin+0);
 		}
 		else{
 			calculate_tempi_magnitudes(calc_bin+1);
-		}
 
-		calc_bin+=2;
-		if (calc_bin >= max_bin) {
-			calc_bin = 0;
+			calc_bin+=2;
+			if (calc_bin >= max_bin) {
+				calc_bin = 0;
+			}
 		}
 
 	}, __func__ );

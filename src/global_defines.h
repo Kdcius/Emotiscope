@@ -57,7 +57,10 @@
 #define NOVELTY_HISTORY_LENGTH (1024)
 
 // TEMPO_LOW to TEMPO_HIGH
-#define NUM_TEMPI (96)
+// Was 96 (48-144 BPM): music above 144 BPM had no bin to win, so the tracker
+// locked onto the half-tempo instead and the metronome ran at half speed.
+// 144 bins spans 48-192 BPM, covering house/techno/DnB territory.
+#define NUM_TEMPI (144)
 
 // BPM range
 #define TEMPO_LOW (48)
